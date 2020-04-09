@@ -62,8 +62,8 @@ const newsService = (function () {
     const apiUrl = 'https://newsapi.org/v2';
 
     return {
-        topHeadlines(country = 'ru', cb) {
-            http.get(`${apiUrl}/top-headlines?country=${country}&category=technology&apiKey=${apiKey}`, cb);
+        topHeadlines(country, category, cb) {
+            http.get(`${apiUrl}/top-headlines?country=${country}&category=${category}&technology&apiKey=${apiKey}`, cb);
         },
         everything(query, cb) {
             http.get(`${apiUrl}/everything?q=${query}&apiKey=${apiKey}`, cb);
@@ -74,6 +74,7 @@ const newsService = (function () {
 const form = document.forms['newsControls'];
 const countrySelect = form.elements['country'];
 const searchInput = form.elements['search'];
+const selectText = form.elements['category'];
 
 form.addEventListener('submit', (e)=>{
   e.preventDefault();
@@ -89,20 +90,21 @@ document.addEventListener('DOMContentLoaded', function () {
 //Load news function
 
 function loadNews() {
+    showLoader();
     const country = countrySelect.value;
     const searchText=searchInput.value;
-
+    const select = selectText.value;
     if(!searchText){
-      newsService.topHeadlines(country, onGetResponse);
+      newsService.topHeadlines(country,select, onGetResponse);
     } else {
       newsService.everything(searchText, onGetResponse);
     }
-
 }
 
 //Function on get response from server
 
 function onGetResponse(err, res) {
+    removePreloader();
   if(err){
     showAlert(err, 'error-msg');
     return;
@@ -118,6 +120,10 @@ function onGetResponse(err, res) {
 
 function renderNews(news) {
     const newsContainer = document.querySelector('.news-container .row');
+    if (newsContainer.children.length){
+        clearContainer(newsContainer);
+
+    }
     let fragment = '';
     news.forEach(newsItem => {
         const el = newsTemplate(newsItem);
@@ -130,11 +136,15 @@ function renderNews(news) {
 //News item template function
 
 function newsTemplate({urlToImage, title, url, description}) {
+    if(urlToImage===null){
+        urlToImage="http://placehold.it/617x347"
+    }
     return ` 
   <div class="col s12">
     <div class="card">
         <div class="card-image">
-            <img src="${urlToImage}" alt="">
+        
+          <img src="${urlToImage}" alt="">
             <span class="card-title">${title || ''}</span>
         </div>
     <div class="card-content">
@@ -157,4 +167,22 @@ function clearContainer(container) {
     container.removeChild(child);
     child = container.lastElementChild;
   }
+}
+
+// show loader  function
+
+function showLoader() {
+    document.body.insertAdjacentHTML('afterbegin',
+        `
+        <div class="progress">
+        <div class="indeterminate"></div>
+</div>
+`);
+}
+
+function removePreloader() {
+    const loader = document.querySelector('.progress');
+    if (loader) {
+        loader.remove();
+    }
 }
